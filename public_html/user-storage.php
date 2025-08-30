@@ -193,7 +193,7 @@ class UserStorage {
                 'reason' => 'permanently_blocked',
                 'count' => $record['count'],
                 'max_count' => $this->maxMessageCount,
-                'message' => 'Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it'
+                'message' => 'Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it'
             ];
         }
         
@@ -215,7 +215,7 @@ class UserStorage {
                     'reason' => 'limit_reached',
                     'count' => $record['count'],
                     'max_count' => $this->maxMessageCount,
-                    'message' => 'Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it'
+                    'message' => 'Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it'
                 ];
             } else {
                 // Ancora nel grace period - ma NON può inviare nuovi messaggi
@@ -226,7 +226,7 @@ class UserStorage {
                     'count' => $record['count'],
                     'max_count' => $this->maxMessageCount,
                     'grace_remaining_minutes' => $remainingMinutes,
-                    'message' => "Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it"
+                    'message' => "Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it"
                 ];
             }
         }

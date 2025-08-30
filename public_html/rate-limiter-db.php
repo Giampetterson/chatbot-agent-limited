@@ -33,7 +33,7 @@ class RateLimiterDB {
         $config = ConfigLoader::getInstance();
         
         // Use provided values or load from config
-        $this->maxMessages = $maxMessages ?? (int)$config->get('RATE_LIMIT_MAX_MESSAGES', 5);
+        $this->maxMessages = $maxMessages ?? (int)$config->get('RATE_LIMIT_MAX_MESSAGES', 10);
         $this->gracePeriodMinutes = $gracePeriodMinutes ?? (int)$config->get('RATE_LIMIT_GRACE_PERIOD_MINUTES', 1);
     }
     
@@ -250,7 +250,7 @@ class RateLimiterDB {
                 return $this->createResponse(
                     self::STATUS_LIMIT_REACHED,
                     false,
-                    'Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it',
+                    'Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it',
                     $userData['count'],
                     $this->maxMessages,
                     $startTime

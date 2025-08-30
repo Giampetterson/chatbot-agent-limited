@@ -22,7 +22,7 @@ class RateLimiter {
     const STATUS_INVALID_USER = 'invalid_user';
     const STATUS_ERROR = 'error';
     
-    public function __construct($maxMessages = 5, $gracePeriodMinutes = 1) {
+    public function __construct($maxMessages = 10, $gracePeriodMinutes = 1) {
         $this->storage = new UserStorage();
         $this->maxMessages = $maxMessages;
         $this->gracePeriodMinutes = $gracePeriodMinutes;
@@ -129,7 +129,7 @@ class RateLimiter {
             
             if ($record['count'] >= $this->maxMessages) {
                 $newStatus = self::STATUS_LIMIT_REACHED;
-                $newMessage = 'Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it';
+                $newMessage = 'Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it';
                 
                 // Se ha appena raggiunto il limite, inizia grace period
                 if ($record['count'] === $this->maxMessages) {
@@ -191,7 +191,7 @@ class RateLimiter {
                 return $this->createResponse(
                     self::STATUS_PERMANENTLY_BLOCKED,
                     false,
-                    'Hai raggiunto il limite di 5 messaggi, iscriviti a Rentri360.it https://www.rentri360.it',
+                    'Hai raggiunto il limite di 10 messaggi, iscriviti a Rentri360.it https://www.rentri360.it',
                     $record['count'],
                     $this->maxMessages,
                     null,

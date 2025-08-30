@@ -1757,7 +1757,7 @@
 
   <div class="chat-wrapper">
     <div class="message-counter" id="message-counter">
-      <span class="counter-text">5/5 messaggi rimanenti</span>
+      <span class="counter-text">10/10 messaggi rimanenti</span>
     </div>
     <div id="chat-container">
     <div id="message-list"></div>
@@ -1882,7 +1882,7 @@ function compressImage(file, maxSizeBytes, quality = 0.8) {
 
   let messageCounter = 0;
   let userMessageCount = 0;
-  let maxMessages = 5;
+  let maxMessages = 10;
   
   // Funzione per aggiornare il contatore visivo
   function updateMessageCounter(current, max) {
@@ -2187,7 +2187,7 @@ function compressImage(file, maxSizeBytes, quality = 0.8) {
           const errorResponse = await res.text();
           try {
             const errorData = JSON.parse(errorResponse.replace('data: ', ''));
-            const message = errorData.message || 'Hai raggiunto il limite di 5 messaggi';
+            const message = errorData.message || 'Hai raggiunto il limite di 10 messaggi';
             botDiv.innerHTML = `
               <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
                 <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
@@ -2790,7 +2790,7 @@ function compressImage(file, maxSizeBytes, quality = 0.8) {
           const errorResponse = await response.text();
           try {
             const errorData = JSON.parse(errorResponse.replace('data: ', ''));
-            const message = errorData.message || 'Hai raggiunto il limite di 5 messaggi';
+            const message = errorData.message || 'Hai raggiunto il limite di 10 messaggi';
             botDiv.innerHTML = `
               <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
                 <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
