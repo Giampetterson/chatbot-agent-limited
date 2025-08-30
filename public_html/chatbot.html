@@ -1,0 +1,3094 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Assistente Rentri360</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Oxanium:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    // Force fresh loading of critical JS files with proper loading sequence
+    const timestamp = Date.now();
+    const scripts = [
+      'user-fingerprint.js?v=1.0.0&t=' + timestamp,
+      'notes.js?v=2.4.4&t=' + timestamp,
+      'services.js?v=2.4.4&t=' + timestamp, 
+      'voice-recorder.js?v=2.4.4&t=' + timestamp
+    ];
+    
+    // Load scripts sequentially to ensure dependencies
+    let scriptsLoaded = 0;
+    window.scriptsReady = false;
+    
+    scripts.forEach((src, index) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = function() {
+        scriptsLoaded++;
+        console.log(`Script loaded: ${src.split('?')[0]} (${scriptsLoaded}/${scripts.length})`);
+        if (scriptsLoaded === scripts.length) {
+          window.scriptsReady = true;
+          console.log('All scripts loaded successfully');
+          // Initialize fingerprinting system
+          if (window.UserFingerprint) {
+            window.userFingerprint = new UserFingerprint();
+            console.log('UserFingerprint initialized');
+          }
+          // Hide loading indicator
+          const loadingIndicator = document.getElementById('system-loading');
+          if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+          }
+        }
+      };
+      script.onerror = function() {
+        console.error(`Failed to load script: ${src}`);
+        const loadingIndicator = document.getElementById('system-loading');
+        if (loadingIndicator) {
+          loadingIndicator.innerHTML = '<span style="color: #721c24;">❌ Errore caricamento sistema. <a href="#" onclick="location.reload()">Ricarica la pagina</a></span>';
+          loadingIndicator.style.background = '#f8d7da';
+          loadingIndicator.style.borderColor = '#f5c6cb';
+        }
+      };
+      document.head.appendChild(script);
+    });
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12pt;
+      font-weight: 400;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    h1 {
+      font-size: 24pt;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #0C2267;
+    }
+    
+    /* Message counter styles */
+    .chat-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 70px;
+    }
+    
+    .message-counter {
+      position: absolute;
+      bottom: -35px;
+      right: 0;
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #90caf9;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+    
+    .message-counter.warning {
+      background: #fff3e0;
+      color: #e65100;
+      border-color: #ffcc80;
+      animation: pulse 2s infinite;
+    }
+    
+    .message-counter.exhausted {
+      background: #fce4ec;
+      color: #c2185b;
+      border-color: #f8bbd0;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .counter-text {
+      font-size: 12px;
+    }
+    
+    #chat-container {
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 650px;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    #message-list {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #fafafa;
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .msg {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      max-width: 80%;
+      font-size: 12pt;
+      font-family: 'Oxanium', sans-serif;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+    
+    .msg.user {
+      background: #0C2267;
+      color: #fff;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    
+    .msg.bot {
+      background: #e8e8e8;
+      color: #333;
+      align-self: flex-start;
+    }
+    
+    .msg.bot a {
+      color: #0C2267;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    
+    .msg.bot a:hover {
+      color: #1F7138;
+    }
+    
+    /* Stili per elementi Markdown */
+    .msg.bot h1, .msg.bot h2, .msg.bot h3, .msg.bot h4, .msg.bot h5, .msg.bot h6 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      margin-top: 0.5em;
+      margin-bottom: 0.3em;
+    }
+    
+    .msg.bot h1 { font-size: 1.5em; }
+    .msg.bot h2 { font-size: 1.3em; }
+    .msg.bot h3 { font-size: 1.1em; }
+    
+    .msg.bot p {
+      margin: 0;
+      line-height: 1.25;
+    }
+    
+    .msg.bot p + p {
+      margin-top: 0.25rem;
+    }
+    
+    .msg.bot ul, .msg.bot ol {
+      margin-left: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    
+    .msg.bot li {
+      margin-bottom: 0.2em;
+    }
+    
+    .msg.bot code {
+      background: #f0f0f0;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    
+    .msg.bot pre {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin-bottom: 0.5em;
+    }
+    
+    .msg.bot pre code {
+      background: none;
+      padding: 0;
+    }
+    
+    .msg.bot blockquote {
+      border-left: 3px solid #0C2267;
+      padding-left: 10px;
+      margin-left: 0;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .msg.bot strong {
+      font-weight: 600;
+    }
+    
+    .msg.bot em {
+      font-style: italic;
+    }
+    
+    .msg.bot hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 1em 0;
+    }
+    
+    /* Stili per immagini analizzate nella chat */
+    .msg.user img {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-top: 8px;
+    }
+    
+    .msg.bot details {
+      margin: 10px 0;
+    }
+    
+    .msg.bot details summary {
+      padding: 8px;
+      background: rgba(12, 34, 103, 0.05);
+      border-radius: 6px;
+      user-select: none;
+    }
+    
+    .msg.bot details summary:hover {
+      background: rgba(12, 34, 103, 0.1);
+    }
+    
+    .msg.bot details[open] summary {
+      margin-bottom: 10px;
+      background: rgba(12, 34, 103, 0.1);
+    }
+    
+    .msg.bot table {
+      border-collapse: collapse;
+      margin-bottom: 0.5em;
+      width: 100%;
+    }
+    
+    .msg.bot th, .msg.bot td {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    
+    .msg.bot th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    
+    #chat-form {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid #e0e0e0;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+    }
+    
+    .chat-input-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+      position: relative;
+    }
+    
+    #attachment-btn {
+      background: #54656f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    #attachment-btn:hover {
+      background: #42525c;
+      transform: scale(1.05);
+    }
+    
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+    
+    #action-btn {
+      background: #0C2267;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    #action-btn:hover {
+      background: #1F7138;
+      transform: scale(1.05);
+    }
+    
+    #action-btn.recording {
+      background: #dc3545;
+      animation: pulse 1.5s infinite;
+    }
+    
+    #action-btn.send-mode {
+      background: #25d366 !important;
+    }
+    
+    #action-btn.send-mode:hover {
+      background: #20b858 !important;
+    }
+    
+    #action-btn.voice-mode {
+      background: #0C2267;
+    }
+    
+    #action-btn.voice-mode:hover {
+      background: #1F7138;
+    }
+    
+    .stop-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 8px;
+    }
+    
+    .stop-btn:hover {
+      background: #c82333;
+      transform: scale(1.05);
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+      }
+    }
+    
+    /* Animazione registrazione vocale */
+    #action-btn.recording {
+      background: #dc3545 !important;
+      animation: voiceRecording 1.5s infinite;
+    }
+    
+    @keyframes voiceRecording {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(220, 53, 69, 0.2);
+        transform: scale(1.05);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+        transform: scale(1);
+      }
+    }
+    
+    /* Indicatore onde sonore */
+    .voice-waves {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .voice-waves.active {
+      opacity: 1;
+    }
+    
+    .voice-wave {
+      width: 2px;
+      background: white;
+      border-radius: 1px;
+      animation: waveAnimation 0.5s ease-in-out infinite alternate;
+    }
+    
+    .voice-wave:nth-child(1) { height: 8px; animation-delay: 0s; }
+    .voice-wave:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+    .voice-wave:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+    .voice-wave:nth-child(4) { height: 12px; animation-delay: 0.3s; }
+    .voice-wave:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+    
+    @keyframes waveAnimation {
+      0% { 
+        height: 4px;
+        opacity: 0.7;
+      }
+      100% { 
+        height: 16px;
+        opacity: 1;
+      }
+    }
+    
+    /* Nascondi elementi non più usati */
+    .chat-buttons-row {
+      display: none;
+    }
+    
+    #chat-input {
+      width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 24px;
+      padding: 10px 16px;
+      font-size: 12pt;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 400;
+      outline: none;
+      background: #f0f2f5;
+      transition: all 0.2s ease;
+      resize: none;
+      min-height: 40px;
+      max-height: 200px;
+      line-height: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    
+    #chat-input:focus {
+      background: #fff;
+      border-color: #25d366;
+      box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.1);
+    }
+    
+    #chat-input::placeholder {
+      color: #999;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    /* Attachment Menu Styles - Fixed */
+    .attachment-menu {
+      position: absolute;
+      bottom: -35px;
+      left: 0;
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+      z-index: 10;
+    }
+    
+    .attachment-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border: 1px solid #9ca3af;
+      background: #f3f4f6;
+      color: #54656f;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .attachment-item:hover {
+      background: #54656f;
+      border-color: #54656f;
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(84, 101, 111, 0.3);
+    }
+    
+    .attachment-item.selected {
+      background: white;
+      border-color: #1F7138;
+      color: #1F7138;
+      box-shadow: 0 2px 8px rgba(31, 113, 56, 0.15);
+    }
+    
+    .attachment-text {
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Space Grotesk', sans-serif;
+      color: inherit;
+    }
+    
+    #chat-btn:hover {
+      background: #185c2d;
+    }
+    
+    #chat-btn:active {
+      background: #134923;
+    }
+    
+    /* Stili dei pulsanti rimossi - ora usano .attachment-item */
+    
+    /* Note button active state rimane per compatibilità con notes panel */
+    #notes-btn.active {
+      background: #6b46c1;
+      color: #fff;
+      border-color: #6b46c1;
+      box-shadow: 0 0 0 2px rgba(107, 70, 193, 0.2);
+    }
+    
+    #notes-btn.active:hover {
+      background: #553695;
+      border-color: #553695;
+    }
+    
+    #notes-btn.active #notes-count-display {
+      color: #fff !important;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+    
+    /* Stili per il pannello appunti */
+    .notes-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 350px;
+      height: 100vh;
+      background: #fff;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .notes-panel.open {
+      transform: translateX(0);
+    }
+    
+    .notes-header {
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+      background: #0C2267;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .notes-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .notes-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .notes-count {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .notes-refresh-btn, .notes-clear-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      padding: 6px;
+      opacity: 0.9;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notes-refresh-btn:hover, .notes-clear-btn:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    .notes-refresh-btn {
+      background: rgba(52, 152, 219, 0.2) !important;
+      border: 1px solid rgba(52, 152, 219, 0.4) !important;
+    }
+    
+    .notes-refresh-btn:hover {
+      background: rgba(52, 152, 219, 0.4) !important;
+      border-color: rgba(52, 152, 219, 0.6) !important;
+    }
+    
+    .notes-refresh-btn:active {
+      transform: rotate(180deg);
+      transition: transform 0.3s ease;
+    }
+    
+    .dossier-add-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    
+    .dossier-add-btn:hover {
+      opacity: 1;
+    }
+    
+    .notes-main-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background: #fafafa;
+    }
+    
+    .dossiers-section, .free-notes-section {
+      margin-bottom: 20px;
+    }
+    
+    .dossiers-section h4, .free-notes-section h4 {
+      margin: 0 0 12px 0;
+      color: #0C2267;
+      font-size: 14px;
+      font-weight: 600;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .dossier-item {
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    
+    .dossier-header {
+      background: #f8f8f8;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .dossier-name {
+      font-weight: 600;
+      color: #0C2267;
+      flex: 1;
+    }
+    
+    .dossier-count {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .dossier-remove-btn {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 50%;
+      color: #999;
+      cursor: pointer;
+      padding: 3px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      min-height: 22px;
+      font-size: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .dossier-remove-btn:hover {
+      color: #fff;
+      background: #dc3545;
+      border-color: #dc3545;
+    }
+    
+    .dossier-drop-zone, .notes-drop-zone {
+      min-height: 80px;
+      padding: 8px;
+      transition: all 0.3s;
+      border: 2px dashed transparent;
+      border-radius: 8px;
+    }
+    
+    .dossier-drop-zone.drag-over, .notes-drop-zone.drag-over {
+      background: #e8f5e8;
+      border: 2px dashed #1F7138;
+    }
+    
+    .drop-placeholder {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-style: italic;
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+    }
+    
+    .notes-empty {
+      text-align: center;
+      color: #999;
+      padding: 40px 20px;
+      font-size: 14px;
+    }
+    
+    .note-item {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .note-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .note-item.expanded {
+      background: #f8f8f8;
+      border-color: #1F7138;
+      box-shadow: 0 2px 8px rgba(31, 113, 56, 0.1);
+    }
+    
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .note-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .drag-handle {
+      color: #999;
+      cursor: move;
+      font-size: 14px;
+      user-select: none;
+      padding: 2px;
+      transition: color 0.2s;
+    }
+    
+    .drag-handle:hover {
+      color: #1F7138;
+    }
+    
+    .note-item.dragging {
+      opacity: 0.5;
+      transform: rotate(2deg);
+    }
+    
+    .note-item[draggable="true"] {
+      transition: all 0.2s;
+    }
+    
+    .note-item[draggable="true"]:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .note-date {
+      font-size: 11px;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .note-remove-btn {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 50%;
+      color: #999;
+      cursor: pointer;
+      padding: 4px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      min-height: 24px;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .note-remove-btn:hover {
+      color: #fff;
+      background: #dc3545;
+      border-color: #dc3545;
+    }
+    
+    .note-content {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .note-preview {
+      max-height: 60px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    
+    .note-full {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+      margin-top: 8px;
+    }
+    
+    .note-content::after {
+      content: "Espandi";
+      position: absolute;
+      bottom: -20px;
+      right: 0;
+      font-size: 10px;
+      color: #1F7138;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    
+    .note-item.expanded .note-content::after {
+      content: "Restringi";
+      bottom: -28px;
+    }
+    
+    .note-actions {
+      margin-top: 32px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .note-item.expanded .note-actions {
+      margin-top: 8px;
+    }
+
+    /* Spazio extra quando ci sono immagini */
+    .note-images + .note-actions {
+      margin-top: 16px;
+    }
+    
+    .note-copy-btn {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 400;
+      color: #666;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    
+    .note-copy-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+    
+    .note-copy-btn:hover {
+      background: #e8e8e8;
+      color: #333;
+      border-color: #ccc;
+    }
+    
+    .note-copy-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .note-copy-btn.success {
+      background: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+    
+    .notes-footer {
+      padding: 16px;
+      border-top: 1px solid #e0e0e0;
+      background: #fff;
+    }
+    
+    .notes-export-btn {
+      width: 100%;
+      background: #1F7138;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+      min-height: 44px;
+    }
+    
+    .notes-export-btn:hover {
+      background: #185c2d;
+    }
+    
+    
+    /* Toast notifications */
+    .notes-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 2000;
+    }
+    
+    .notes-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .notes-toast.success {
+      background: #1F7138;
+    }
+    
+    .notes-toast.info {
+      background: #0C2267;
+    }
+    
+    /* Pulsante aggiungi agli appunti */
+    .add-to-notes-btn {
+      background: #f9f4ff;
+      border-color: #e0d4f7;
+      color: #6b46c1;
+    }
+    
+    .add-to-notes-btn:hover {
+      background: #6b46c1;
+      color: #fff;
+      border-color: #6b46c1;
+    }
+    
+    .add-to-notes-btn.success {
+      background: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+    
+    /* Select per mobile */
+    .note-dossier-select {
+      width: 100%;
+      padding: 6px 10px;
+      margin: 8px 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fff;
+      color: #333;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .note-dossier-select:hover {
+      border-color: #1F7138;
+    }
+    
+    .note-dossier-select:focus {
+      outline: none;
+      border-color: #1F7138;
+      box-shadow: 0 0 0 2px rgba(31, 113, 56, 0.1);
+    }
+
+    /* ===== STILI SISTEMA IMMAGINI ===== */
+
+    /* Pulsante upload immagini */
+    .note-upload-btn {
+      background: #e8f5e8;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 400;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    
+    .note-upload-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .note-upload-btn:hover {
+      background: #155724;
+      color: #fff;
+      border-color: #155724;
+    }
+    
+    .note-upload-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Container immagini nota */
+    .note-images {
+      margin-top: 24px;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f8f9fa;
+      transition: all 0.3s ease;
+    }
+
+    /* Quando è chiusa, riduci lo spazio */
+    .note-images:not(.expanded) {
+      margin-bottom: 0;
+    }
+
+    /* Quando la nota è espansa, aggiungi ancora più spazio sopra le immagini */
+    .note-item.expanded .note-images {
+      margin-top: 32px;
+    }
+
+    /* Header immagini */
+    .images-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #e9ecef;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .images-count {
+      font-size: 12px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+
+    .images-expand-btn {
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 3px;
+      transition: all 0.2s;
+    }
+
+    .images-expand-btn:hover {
+      background: rgba(0,0,0,0.05);
+      color: #495057;
+    }
+
+    .images-expand-btn svg {
+      transition: transform 0.2s;
+    }
+
+    /* Griglia immagini */
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      opacity: 0;
+    }
+
+    .images-grid.expanded {
+      max-height: none;
+      padding: 12px;
+      opacity: 1;
+    }
+
+    /* Thumbnail immagini */
+    .note-image-thumbnail {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid #dee2e6;
+      transition: all 0.2s;
+    }
+
+    .note-image-thumbnail:hover {
+      border-color: #0C2267;
+      transform: scale(1.02);
+    }
+
+    .note-image-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Overlay con azioni */
+    .thumbnail-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .note-image-thumbnail:hover .thumbnail-overlay {
+      opacity: 1;
+    }
+
+    .thumbnail-view,
+    .thumbnail-remove {
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      padding: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      min-height: 24px;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .thumbnail-view:hover {
+      background: #fff;
+      color: #0C2267;
+    }
+
+    .thumbnail-remove:hover {
+      background: #dc3545;
+      color: #fff;
+    }
+
+    /* Info thumbnail */
+    .thumbnail-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      padding: 12px 6px 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .note-image-thumbnail:hover .thumbnail-info {
+      opacity: 1;
+    }
+
+    .thumbnail-size {
+      color: #fff;
+      font-size: 10px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* Drop zone per aggiungere immagini */
+    .add-image-drop-zone {
+      aspect-ratio: 1;
+      border: 2px dashed #ced4da;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fff;
+      color: #6c757d;
+    }
+
+    .add-image-drop-zone:hover,
+    .add-image-drop-zone.drag-over {
+      border-color: #0C2267;
+      background: rgba(12, 34, 103, 0.05);
+      color: #0C2267;
+    }
+
+    .add-image-drop-zone span {
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* Progress indicator upload */
+    .image-upload-progress {
+      margin-top: 12px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #495057;
+    }
+
+    .progress-count {
+      font-weight: 600;
+      color: #0C2267;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(45deg, #0C2267, #1a2d7a);
+      transition: width 0.3s ease;
+      border-radius: 3px;
+    }
+
+    /* Gallery viewer modal */
+    .image-gallery-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      cursor: pointer;
+    }
+
+    .gallery-container {
+      position: relative;
+      max-width: 95vw;
+      max-height: 95vh;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .gallery-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255,255,255,0.9);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+
+    .gallery-close:hover {
+      background: #fff;
+      color: #dc3545;
+    }
+
+    .gallery-content {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: #000;
+    }
+
+    .gallery-image-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+      max-height: 80vh;
+      padding: 20px;
+    }
+
+    .gallery-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .gallery-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.9);
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 24px;
+      font-weight: bold;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .gallery-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .gallery-nav:not(:disabled):hover {
+      background: #fff;
+      color: #0C2267;
+    }
+
+    .gallery-nav.prev {
+      left: 16px;
+    }
+
+    .gallery-nav.next {
+      right: 16px;
+    }
+
+    .gallery-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      font-size: 14px;
+    }
+
+    .gallery-filename {
+      font-weight: 600;
+      color: #495057;
+      max-width: 40%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .gallery-counter {
+      color: #6c757d;
+      font-weight: 500;
+    }
+
+    .gallery-size {
+      color: #6c757d;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      /* Adatta chat wrapper e contatore per mobile */
+      .chat-wrapper {
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      
+      .message-counter {
+        bottom: -30px;
+        right: 10px;
+        padding: 4px 10px;
+        font-size: 11px;
+      }
+      
+      .counter-text {
+        font-size: 11px;
+      }
+      
+      /* Menu mobile - completamente fuori dal flusso normale */
+      .attachment-menu {
+        position: static;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        right: auto;
+        width: 100%;
+        max-width: none;
+        flex-direction: row;
+        gap: 8px;
+        margin-top: 15px;
+        justify-content: center;
+        z-index: auto;
+      }
+      
+      .attachment-item {
+        width: auto;
+        flex: 1;
+        justify-content: center;
+        padding: 8px 12px;
+      }
+      .notes-panel {
+        width: 100%;
+        max-width: 320px;
+      }
+      
+      /* Su mobile mostra sempre i controlli */
+      .action-btn-container {
+        opacity: 1 !important;
+      }
+      
+      /* Nascondi drag handle su mobile */
+      .drag-handle {
+        display: none;
+      }
+      
+      /* Aggiungi indicatore per long press */
+      .note-item::before {
+        content: "Tieni premuto per spostare";
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: #999;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      
+      .note-item:active::before {
+        opacity: 1;
+      }
+
+      /* Responsive immagini su mobile */
+      .images-grid.expanded {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .gallery-container {
+        max-width: 98vw;
+        max-height: 98vh;
+      }
+
+      .gallery-image-container {
+        min-height: 250px;
+        max-height: 70vh;
+        padding: 10px;
+      }
+
+      .gallery-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+      }
+
+      .gallery-nav.prev {
+        left: 8px;
+      }
+
+      .gallery-nav.next {
+        right: 8px;
+      }
+
+      .gallery-info {
+        padding: 12px;
+        font-size: 13px;
+      }
+
+      .gallery-filename {
+        max-width: 30%;
+      }
+    }
+    
+    /* Media query per mobile - mantieni il nuovo layout a due righe */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      h1 {
+        font-size: 20pt;
+      }
+      
+      #chat-container {
+        height: 500px;
+        max-width: 100%;
+      }
+      
+      .msg {
+        font-size: 11pt;
+        max-width: 85%;
+      }
+      
+      .chat-input-container {
+        padding: 10px 12px;
+        gap: 6px;
+      }
+      
+      #attachment-btn, #action-btn {
+        width: 36px;
+        height: 36px;
+      }
+      
+      #attachment-btn svg, #action-btn svg {
+        width: 20px;
+        height: 20px;
+      }
+      
+      #chat-input {
+        padding: 10px 14px;
+        font-size: 14px;
+        border-radius: 20px;
+        min-height: 36px;
+        max-height: 160px;
+      }
+      
+      .attachment-menu {
+        position: static;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        width: 100%;
+        max-width: none;
+        min-width: auto;
+        margin-top: 12px;
+        flex-direction: row;
+        justify-content: center;
+        gap: 6px;
+        z-index: auto;
+      }
+      
+      .attachment-item {
+        padding: 10px 8px;
+        flex: 1;
+        font-size: 11px;
+      }
+      
+      .attachment-text {
+        font-size: 13px;
+      }
+    }
+    
+    /* Media query per schermi molto piccoli */
+    @media (max-width: 360px) {
+      /* Ulteriori adattamenti per schermi piccoli */
+      .chat-wrapper {
+        margin-bottom: 15px;
+      }
+      
+      .message-counter {
+        padding: 3px 8px;
+        font-size: 10px;
+      }
+      
+      .counter-text {
+        font-size: 10px;
+      }
+      
+      h1 {
+        font-size: 20px;
+      }
+      
+      .attachment-menu {
+        position: static;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        width: 100%;
+        max-width: none;
+        margin-top: 10px;
+        flex-direction: row;
+        justify-content: center;
+        gap: 4px;
+        z-index: auto;
+      }
+      
+      .attachment-item {
+        font-size: 10px;
+        padding: 6px 6px;
+        flex: 1;
+      }
+      
+      #chat-btn {
+        min-width: 70px;
+        padding: 14px 12px;
+        font-size: 10px;
+      }
+      
+      #notes-count-display {
+        font-size: 9px;
+        margin-right: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Assistente Rentri360</h1>
+  <p style="color: #666; font-size: 14px; margin-top: -15px; margin-bottom: 20px; text-align: center; max-width: 600px;">Il potere dell'Intelligenza Artificiale nella semplificazione delle procedure complesse</p>
+  
+  <!-- Loading indicator -->
+  <div id="system-loading" style="display: block; text-align: center; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin-bottom: 15px; max-width: 600px;">
+    <span style="color: #856404;">⏳ Caricamento sistema identificazione utenti...</span>
+  </div>
+
+  <div class="chat-wrapper">
+    <div class="message-counter" id="message-counter">
+      <span class="counter-text">5/5 messaggi rimanenti</span>
+    </div>
+    <div id="chat-container">
+    <div id="message-list"></div>
+    <form id="chat-form">
+      <div class="chat-input-container">
+        <!-- Input Field -->
+        <div class="input-wrapper">
+          <textarea id="chat-input" placeholder="Scrivi o registra un messaggio..." autocomplete="off" rows="1"></textarea>
+        </div>
+        
+        <!-- Action Button (Voice/Send) -->
+        <button id="action-btn" type="button" class="voice-mode" title="Registra messaggio vocale">
+          <svg id="mic-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2s-2-.9-2-2V4c0-1.1.9-2 2-2zm5.3 6c.4 0 .7.3.7.7 0 3.25-2.25 5.97-5.3 6.7v2.1h1.5c.4 0 .8.35.8.75S14.1 19 13.7 19h-3.4c-.4 0-.8-.35-.8-.75S9.9 17.5 10.3 17.5h1.5v-2.1C8.75 14.67 6.5 11.95 6.5 8.7c0-.4.3-.7.7-.7s.7.3.7.7c0 2.76 2.24 5 5 5s5-2.24 5-5c0-.4.3-.7.7-.7z"/>
+          </svg>
+          <svg id="send-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+            <path d="M2.01 21L23 12L2.01 3L2 10l15 2-15 2z"/>
+          </svg>
+          <!-- Onde sonore per animazione registrazione -->
+          <div id="voice-waves" class="voice-waves">
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+            <div class="voice-wave"></div>
+          </div>
+        </button>
+        
+        <!-- Stop Button -->
+        <button id="stop-btn" type="button" class="stop-btn" title="Interrompi risposta" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Attachment Menu (Hidden by default) -->
+      <div id="attachment-menu" class="attachment-menu">
+        <button id="analyze-btn" type="button" class="attachment-item">
+          <span class="attachment-text">Usa RentrIA</span>
+        </button>
+        
+        <button id="notes-btn" type="button" class="attachment-item">
+          <span class="attachment-text">Visualizza Appunti</span>
+        </button>
+        
+        <button id="pdf-btn" type="button" class="attachment-item">
+          <span class="attachment-text">Esporta PDF</span>
+        </button>
+      </div>
+      
+      <!-- Hidden file input for image upload -->
+      <input type="file" id="image-input" accept="image/*" capture="environment" style="display: none;">
+    </form>
+  </div>
+  </div> <!-- chiude chat-wrapper -->
+
+<script>
+// Funzione per comprimere immagini lato client
+function compressImage(file, maxSizeBytes, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+      // Calcola nuove dimensioni mantenendo aspect ratio
+      let { width, height } = img;
+      const maxDimension = 1920; // Max larghezza/altezza
+      
+      if (width > height && width > maxDimension) {
+        height = (height * maxDimension) / width;
+        width = maxDimension;
+      } else if (height > maxDimension) {
+        width = (width * maxDimension) / height;
+        height = maxDimension;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Disegna immagine ridimensionata
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Converte in blob con qualità specificata
+      canvas.toBlob((blob) => {
+        if (blob && blob.size <= maxSizeBytes) {
+          // Crea nuovo File object
+          const compressedFile = new File([blob], file.name, {
+            type: blob.type,
+            lastModified: Date.now()
+          });
+          resolve(compressedFile);
+        } else if (quality > 0.1) {
+          // Riprova con qualità inferiore
+          compressImage(file, maxSizeBytes, quality - 0.1).then(resolve).catch(reject);
+        } else {
+          reject(new Error('Impossibile comprimere abbastanza'));
+        }
+      }, file.type, quality);
+    };
+    
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+(function(){
+  const endpoint = 'chat.php';
+  const msgList        = document.getElementById('message-list');
+  const form           = document.getElementById('chat-form');
+  const input          = document.getElementById('chat-input');
+  const actionBtn      = document.getElementById('action-btn');
+  const attachmentMenu = document.getElementById('attachment-menu');
+  const micIcon        = document.getElementById('mic-icon');
+  const sendIcon       = document.getElementById('send-icon');
+  const stopBtn        = document.getElementById('stop-btn');
+  
+  let isVoiceMode = true; // Default: mostra microfono
+  let isProcessing = false; // Traccia se stiamo elaborando
+  let currentAbortController = null; // Per interrompere fetch
+
+  let messageCounter = 0;
+  let userMessageCount = 0;
+  let maxMessages = 5;
+  
+  // Funzione per aggiornare il contatore visivo
+  function updateMessageCounter(current, max) {
+    const counterElement = document.getElementById('message-counter');
+    if (!counterElement) return;
+    
+    const remaining = max - current;
+    const counterText = counterElement.querySelector('.counter-text');
+    
+    if (counterText) {
+      counterText.textContent = `${remaining}/${max} messaggi rimanenti`;
+    }
+    
+    // Cambia stile in base ai messaggi rimanenti
+    counterElement.classList.remove('warning', 'exhausted');
+    
+    if (remaining === 0) {
+      counterElement.classList.add('exhausted');
+    } else if (remaining === 1) {
+      counterElement.classList.add('warning');
+    }
+  }
+  
+  // Inizializza contatore dal server
+  async function initMessageCounter() {
+    // Ottieni User ID
+    let userId = null;
+    if (window.userFingerprint) {
+      try {
+        userId = await window.userFingerprint.getUserId();
+      } catch (error) {
+        console.error('Errore generazione User ID per contatore:', error);
+        // Fallback a default
+        updateMessageCounter(0, maxMessages);
+        return;
+      }
+    }
+    
+    // Chiama endpoint per ottenere stato contatore
+    try {
+      const response = await fetch('get_counter.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId
+        },
+        body: JSON.stringify({user_id: userId})
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        updateMessageCounter(data.count || 0, data.max_count || maxMessages);
+      } else {
+        // Fallback a default
+        updateMessageCounter(0, maxMessages);
+      }
+    } catch (error) {
+      console.error('Errore recupero contatore:', error);
+      updateMessageCounter(0, maxMessages);
+    }
+  }
+  
+  // Chiama init quando gli script sono pronti
+  waitForScripts().then(() => {
+    if (window.userFingerprint) {
+      initMessageCounter();
+    }
+  });
+  
+  // Auto-resize textarea function
+  function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto';
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = 40; // min-height from CSS
+    const maxHeight = 200; // max-height from CSS
+    
+    if (scrollHeight <= maxHeight) {
+      textarea.style.height = Math.max(scrollHeight, minHeight) + 'px';
+      textarea.style.overflowY = 'hidden';
+    } else {
+      textarea.style.height = maxHeight + 'px';
+      textarea.style.overflowY = 'auto';
+    }
+  }
+  
+  function appendMessageContainer(sender) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    msgList.appendChild(div);
+    msgList.scrollTop = msgList.scrollHeight;
+    
+    if (sender === 'bot') {
+      const messageId = 'msg-' + (++messageCounter);
+      div.setAttribute('data-message-id', messageId);
+      setTimeout(() => {
+        if (window.chatServices) {
+          window.chatServices.addShareButtons(div, messageId);
+        }
+        if (window.addNotesToButton) {
+          window.addNotesToButton(div, messageId);
+        }
+      }, 100);
+    }
+    
+    return div;
+  }
+  
+  function renderMarkdown(text) {
+    marked.setOptions({
+      breaks: false,    // ✅ evita <br> automatici
+      gfm: true,
+      headerIds: false,
+      mangle: false,
+      sanitize: false
+    });
+    
+    let html = marked.parse(text);
+    
+    // Srotola i paragrafi in una singola sequenza con <br>
+    html = html
+      .replace(/^<p>|<\/p>$/g, '')              // rimuovi p di testa/coda se presenti
+      .replace(/<\/p>\s*<p>/g, '<br>');         // paragrafi → singolo <br>
+    
+    // Aggiungi separazione prima della riga di contatto finale
+    html = html.replace(
+      /(Se hai bisogno di ulteriori dettagli contattaci)/gi,
+      '<br><br>$1'
+    );
+    
+    // Fissa i link senza duplicare attributi target
+    html = html.replace(/<a\s+(?!.*target=)/g, '<a target="_blank" rel="noopener noreferrer" ');
+    
+    // Converti PiattaformaRentriFacile.it in link cliccabile (dopo aver processato altri link)
+    html = html.replace(
+      /\bPiattaformaRentriFacile\.it\b(?![^<]*<\/a>)/gi,
+      '<a href="https://PiattaformaRentriFacile.it" target="_blank" rel="noopener noreferrer">PiattaformaRentriFacile.it</a>'
+    );
+    
+    // Converti Rentri360.it in link cliccabile
+    html = html.replace(
+      /\bRentri360\.it\b(?![^<]*<\/a>)/gi,
+      '<a href="https://www.rentri360.it" target="_blank" rel="noopener noreferrer">Rentri360.it</a>'
+    );
+    
+    return html;
+  }
+
+  // Messaggio iniziale
+  appendMessageContainer('bot').textContent =
+    'Ciao! Sono l\'assistente Rentri360 per la gestione dei rifiuti e il sistema RENTRI. Come posso aiutarti?';
+
+  // Semplice toggle microfono/invio
+  function updateActionButton() {
+    const hasText = input && input.value.trim().length > 0;
+    
+    if (hasText) {
+      // Mostra freccia invio
+      isVoiceMode = false;
+      if (micIcon) micIcon.style.display = 'none';
+      if (sendIcon) sendIcon.style.display = 'block';
+      if (actionBtn) {
+        actionBtn.style.background = '#25d366';
+        actionBtn.title = 'Invia messaggio';
+      }
+    } else {
+      // Mostra microfono
+      isVoiceMode = true;
+      if (micIcon) micIcon.style.display = 'block';
+      if (sendIcon) sendIcon.style.display = 'none';
+      if (actionBtn) {
+        actionBtn.style.background = '#25d366';
+        actionBtn.title = 'Registra messaggio vocale';
+      }
+    }
+  }
+  
+  // Wait for scripts to be ready
+  async function waitForScripts(maxWait = 5000) {
+    const start = Date.now();
+    while (!window.scriptsReady && (Date.now() - start) < maxWait) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return window.scriptsReady;
+  }
+
+  // Send message function
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text || isProcessing) return;
+    
+    // Protezione contro richieste di system prompt e informazioni del modello
+    const lowerText = text.toLowerCase();
+    const blockedPatterns = [
+        'system prompt', 'system_prompt', 'prompt del sistema', 'prompt di sistema',
+        'tuo prompt', 'tuo system prompt', 'dimmi il tuo system prompt',
+        'qual è il tuo prompt', 'mostra il prompt', 'modello di intelligenza artificiale',
+        'che modello sei', 'quale modello usi', 'che ia sei', 'intelligence artificiale',
+        'consulente professionista', 'instructions', 'istruzioni di sistema',
+        'ignore previous', 'ignora precedenti', 'forget previous', 'dimenticati le istruzioni'
+    ];
+    
+    for (const pattern of blockedPatterns) {
+        if (lowerText.includes(pattern)) {
+            const botDiv = appendMessageContainer('bot');
+            botDiv.innerHTML = `
+              <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeaa7;">
+                <h4 style="margin: 0 0 10px 0;">⚠️ Richiesta non supportata</h4>
+                <p style="margin: 0;">Non posso fornire informazioni sui miei parametri di sistema. Prova con una domanda diversa!</p>
+              </div>
+            `;
+            input.value = '';
+            autoResizeTextarea(input);
+            return;
+        }
+    }
+    
+    // Wait for scripts to be ready
+    console.log('Checking if scripts are ready...');
+    const scriptsReady = await waitForScripts();
+    if (!scriptsReady) {
+      alert('Sistema ancora in caricamento. Riprova tra qualche secondo.');
+      return;
+    }
+    
+    // Ottieni User ID dal fingerprinting
+    let userId = null;
+    if (window.userFingerprint) {
+      try {
+        userId = await window.userFingerprint.getUserId();
+        console.log('User ID generato:', userId);
+      } catch (error) {
+        console.error('Errore generazione User ID:', error);
+        alert('Errore nell\'identificazione utente. Riprova.');
+        return;
+      }
+    } else {
+      console.error('Sistema fingerprinting non disponibile');
+      alert('Sistema identificazione non caricato. Ricarica la pagina.');
+      return;
+    }
+    
+    // Inizia elaborazione
+    setProcessingState(true);
+    
+    appendMessageContainer('user').textContent = text;
+    input.value = '';
+    autoResizeTextarea(input); // Reset height
+    updateActionButton(); // Reset to voice mode
+    
+    const botDiv = appendMessageContainer('bot');
+    let fullResponse = '';
+    let renderTimeout = null;
+    let lastRenderTime = 0;
+    const RENDER_DELAY = 100; // millisecondi tra render
+
+    // Funzione per renderizzare con throttling
+    function updateDisplay() {
+      const now = Date.now();
+      if (now - lastRenderTime >= RENDER_DELAY) {
+        try {
+          botDiv.innerHTML = renderMarkdown(fullResponse);
+        } catch(e) {
+          // Se il markdown è incompleto, mostra il testo grezzo
+          botDiv.textContent = fullResponse;
+        }
+        msgList.scrollTop = msgList.scrollHeight;
+        lastRenderTime = now;
+      } else {
+        // Programma un render dopo il delay
+        clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+          try {
+            botDiv.innerHTML = renderMarkdown(fullResponse);
+          } catch(e) {
+            botDiv.textContent = fullResponse;
+          }
+          msgList.scrollTop = msgList.scrollHeight;
+          lastRenderTime = Date.now();
+        }, RENDER_DELAY);
+      }
+    }
+
+    try {
+      // Crea AbortController per permettere interruzione
+      currentAbortController = new AbortController();
+      
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-ID': userId
+        },
+        body: JSON.stringify({ 
+          content: text,
+          user_id: userId 
+        }),
+        signal: currentAbortController.signal
+      });
+      if (!res.ok) {
+        if (res.status === 429) {
+          // Rate limiting - mostra messaggio specifico
+          const errorResponse = await res.text();
+          try {
+            const errorData = JSON.parse(errorResponse.replace('data: ', ''));
+            const message = errorData.message || 'Hai raggiunto il limite di 5 messaggi';
+            botDiv.innerHTML = `
+              <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
+                <p style="margin: 0;">${message}</p>
+                <p style="margin: 10px 0 0 0;"><a href="https://www.rentri360.it" target="_blank" rel="noopener noreferrer" style="color: #1565c0; font-weight: bold;">Accedi a Rentri360.it →</a></p>
+              </div>
+            `;
+          } catch (e) {
+            botDiv.innerHTML = `
+              <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
+                <p style="margin: 0;">La prova è scaduta, accedi a Rentri360.it e semplifica le tue procedure.</p>
+                <p style="margin: 10px 0 0 0;"><a href="https://www.rentri360.it" target="_blank" rel="noopener noreferrer" style="color: #1565c0; font-weight: bold;">Accedi a Rentri360.it →</a></p>
+              </div>
+            `;
+          }
+          setProcessingState(false);
+          currentAbortController = null;
+          return;
+        }
+        throw new Error(res.status + ' ' + res.statusText);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buf = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        // Splitta ogni volta che incontri due newline
+        const parts = buf.split(/\r?\n\r?\n/);
+        buf = parts.pop(); // parte residua
+
+        for (let part of parts) {
+          // cerca righe che iniziano per "data:"
+          part.split(/\r?\n/).forEach(line => {
+            if (!line.startsWith('data:')) return;
+            const jsonStr = line.replace(/^data:\s*/, '');
+            try {
+              const obj = JSON.parse(jsonStr);
+              
+              // Gestisci aggiornamento contatore
+              if (obj.type === 'counter_update') {
+                updateMessageCounter(obj.count, obj.max_count);
+                return;
+              }
+              
+              // Gestisci streaming della risposta
+              const delta = obj.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullResponse += delta;
+                // Aggiorna display con throttling
+                updateDisplay();
+              }
+            } catch(e) {
+              // ignora JSON malformati
+            }
+          });
+        }
+      }
+      
+      // Rendering finale per assicurarsi che tutto sia processato
+      clearTimeout(renderTimeout);
+      if (fullResponse) {
+        botDiv.innerHTML = renderMarkdown(fullResponse);
+        msgList.scrollTop = msgList.scrollHeight;
+        
+        // Il contatore viene ora aggiornato dal server tramite counter_update
+      }
+      
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        botDiv.innerHTML = '<em style="color: #666;">Risposta interrotta dall\'utente</em>';
+      } else {
+        botDiv.textContent = 'Errore: ' + err.message;
+      }
+    } finally {
+      // Fine elaborazione
+      setProcessingState(false);
+      currentAbortController = null;
+    }
+  }
+  
+  // Gestione stato processing
+  function setProcessingState(processing) {
+    isProcessing = processing;
+    
+    if (processing) {
+      // Mostra pulsante stop, nascondi altri controlli
+      if (stopBtn) stopBtn.style.display = 'flex';
+      if (actionBtn) actionBtn.style.opacity = '0.5';
+      if (input) input.disabled = true;
+      
+      // Disabilita tutti i pulsanti azione dei messaggi
+      document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+      });
+      
+    } else {
+      // Nascondi pulsante stop, ripristina controlli
+      if (stopBtn) stopBtn.style.display = 'none';
+      if (actionBtn) actionBtn.style.opacity = '1';
+      if (input) input.disabled = false;
+      
+      // Riabilita pulsanti azione (tranne RENTRI che ha sua logica)
+      document.querySelectorAll('.action-btn:not(.rentri-btn)').forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+      
+      // Riabilita RENTRI solo se ci sono dati analisi
+      document.querySelectorAll('.rentri-btn').forEach(btn => {
+        if (currentAnalysisData && currentAnalysisData.items && currentAnalysisData.items.length > 0) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
+      });
+    }
+  }
+  
+  // Funzione per interrompere risposta
+  function stopResponse() {
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+  }
+  
+  // Event listeners semplici
+  if (input) {
+    input.addEventListener('input', function() {
+      updateActionButton();
+      autoResizeTextarea(input);
+    });
+    
+    input.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        if (!isVoiceMode && input.value.trim()) {
+          sendMessage();
+        }
+      }
+    });
+    
+    // Initialize textarea height
+    autoResizeTextarea(input);
+  }
+  
+  if (form) {
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!isVoiceMode) {
+        await sendMessage();
+      }
+    });
+  }
+  
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      stopResponse();
+    });
+  }
+  
+  if (actionBtn) {
+    actionBtn.addEventListener('click', async () => {
+      if (isVoiceMode) {
+        // Voice mode
+        if (window.voiceRecorder) {
+          window.voiceRecorder.recordButton = actionBtn;
+          await window.voiceRecorder.toggleRecording();
+        }
+      } else {
+        // Send mode
+        await sendMessage();
+      }
+    });
+  }
+  
+  // Menu fisso, non servono più handler per aprirlo/chiuderlo
+
+  // Lista di CDN per jsPDF
+  const jsPDFSources = [
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+  ];
+
+  let currentCDNIndex = 0;
+
+  // Funzione per caricare jsPDF dinamicamente
+  function loadJsPDF(callback) {
+    if (currentCDNIndex >= jsPDFSources.length) {
+      alert('Impossibile caricare la libreria PDF da nessun CDN. Verifica la connessione internet.');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = jsPDFSources[currentCDNIndex];
+    
+    script.onload = function() {
+      console.log('jsPDF caricato da:', jsPDFSources[currentCDNIndex]);
+      if (typeof callback === 'function') {
+        callback();
+      }
+    };
+    
+    script.onerror = function() {
+      console.error('Fallito caricamento da:', jsPDFSources[currentCDNIndex]);
+      currentCDNIndex++;
+      loadJsPDF(callback); // Prova il prossimo CDN
+    };
+    
+    document.head.appendChild(script);
+  }
+
+  // Funzione per verificare se jsPDF è disponibile
+  function isJsPDFAvailable() {
+    return (typeof window.jsPDF !== 'undefined') || 
+           (typeof jsPDF !== 'undefined') || 
+           (typeof window.jspdf !== 'undefined') ||
+           (typeof jspdf !== 'undefined');
+  }
+
+  // Funzione per ottenere il costruttore jsPDF
+  function getJsPDFConstructor() {
+    let jsPDFObj = null;
+    
+    // Prima trova l'oggetto jsPDF
+    if (typeof window.jsPDF !== 'undefined') {
+      jsPDFObj = window.jsPDF;
+    } else if (typeof jsPDF !== 'undefined') {
+      jsPDFObj = jsPDF;
+    } else if (typeof window.jspdf !== 'undefined') {
+      jsPDFObj = window.jspdf;
+    } else if (typeof jspdf !== 'undefined') {
+      jsPDFObj = jspdf;
+    }
+    
+    if (!jsPDFObj) return null;
+    
+    // Se è già una funzione, restituiscila
+    if (typeof jsPDFObj === 'function') {
+      return jsPDFObj;
+    }
+    
+    // Se è un oggetto, cerca il costruttore all'interno
+    if (typeof jsPDFObj === 'object') {
+      // Prova le proprietà più comuni
+      if (typeof jsPDFObj.jsPDF === 'function') return jsPDFObj.jsPDF;
+      if (typeof jsPDFObj.default === 'function') return jsPDFObj.default;
+      if (typeof jsPDFObj.jspdf === 'function') return jsPDFObj.jspdf;
+      
+      // Debug: mostra tutte le proprietà funzione
+      console.log('jsPDF object properties:');
+      for (let prop in jsPDFObj) {
+        if (typeof jsPDFObj[prop] === 'function') {
+          console.log(`  ${prop}: function`);
+        }
+      }
+      
+      // Cerca una funzione che sembri un costruttore (inizia con maiuscola)
+      for (let prop in jsPDFObj) {
+        if (typeof jsPDFObj[prop] === 'function' && prop[0] === prop[0].toUpperCase()) {
+          console.log(`Trying constructor: ${prop}`);
+          return jsPDFObj[prop];
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  // Funzione per esportare la conversazione in PDF
+  function exportToPDF() {
+    // Verifica che jsPDF sia disponibile
+    if (!isJsPDFAvailable()) {
+      console.log('jsPDF non caricato, caricamento dinamico in corso...');
+      loadJsPDF(function() {
+        setTimeout(exportToPDF, 500); // Aumentato timeout
+      });
+      return;
+    }
+
+    console.log('jsPDF trovato, iniziando generazione PDF...');
+
+    // Raccogli tutti i messaggi dalla conversazione
+    const messages = [];
+    const messageElements = document.querySelectorAll('#message-list .msg');
+    
+    messageElements.forEach(element => {
+      const isUser = element.classList.contains('user');
+      const isBot = element.classList.contains('bot');
+      
+      if (isUser || isBot) {
+        let content = element.textContent.trim();
+        messages.push({
+          type: isUser ? 'user' : 'bot',
+          content: content
+        });
+      }
+    });
+
+    if (messages.length === 0) {
+      alert('Nessuna conversazione da esportare.');
+      return;
+    }
+
+    try {
+      // Crea un nuovo documento PDF
+      const jsPDFConstructor = getJsPDFConstructor();
+      console.log('Constructor found:', typeof jsPDFConstructor);
+      console.log('Constructor details:', jsPDFConstructor);
+      
+      if (!jsPDFConstructor) {
+        throw new Error('jsPDF constructor not found');
+      }
+      
+      if (typeof jsPDFConstructor !== 'function') {
+        throw new Error('jsPDF constructor is not a function: ' + typeof jsPDFConstructor);
+      }
+      
+      const doc = new jsPDFConstructor();
+      
+      // Header del documento
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Conversazione Assistente Rentri360', 20, 20);
+      
+      // Data di esportazione
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const currentDate = new Date();
+      const formattedDate = currentDate.getDate().toString().padStart(2, '0') + '/' + 
+                           (currentDate.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                           currentDate.getFullYear() + ' ' + 
+                           currentDate.getHours().toString().padStart(2, '0') + ':' + 
+                           currentDate.getMinutes().toString().padStart(2, '0');
+      doc.text('Esportato il: ' + formattedDate, 20, 30);
+      
+      // Linea separatrice
+      doc.line(20, 35, 190, 35);
+      
+      let yPosition = 45;
+      const pageHeight = doc.internal.pageSize.height;
+      const marginBottom = 20;
+      const lineHeight = 6;
+      
+      // Itera attraverso i messaggi
+      messages.forEach((message) => {
+        // Controlla se serve una nuova pagina
+        if (yPosition > pageHeight - marginBottom - 20) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // Header del messaggio
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        const sender = message.type === 'user' ? 'Utente' : 'Assistente';
+        doc.text(sender + ':', 20, yPosition);
+        yPosition += lineHeight + 2;
+        
+        // Contenuto del messaggio
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        // Pulisci il testo per PDF
+        let text = message.content
+          .replace(/\*\*([^*]+)\*\*/g, '$1')  // Rimuovi grassetto markdown
+          .replace(/\*([^*]+)\*/g, '$1')      // Rimuovi corsivo markdown
+          .replace(/`([^`]+)`/g, '$1')        // Rimuovi code markdown
+          .replace(/```[\s\S]*?```/g, '[Codice]') // Sostituisci blocchi codice
+          .replace(/^\s*[-*+]\s+/gm, '• ')    // Converti liste markdown
+          .replace(/^\s*\d+\.\s+/gm, '• ')    // Converti liste numerate
+          .replace(/#{1,6}\s*/g, '')          // Rimuovi header markdown
+          .replace(/>\s*/g, '')               // Rimuovi blockquote
+          .replace(/\n{3,}/g, '\n\n')         // Normalizza newline
+          .trim();
+        
+        // Split del testo in righe che si adattano alla pagina
+        const textLines = doc.splitTextToSize(text, 170);
+        
+        textLines.forEach(line => {
+          // Controlla se serve una nuova pagina
+          if (yPosition > pageHeight - marginBottom) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          doc.text(line, 20, yPosition);
+          yPosition += lineHeight;
+        });
+        
+        yPosition += 4; // Spazio tra messaggi
+      });
+      
+      // Footer con branding
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text('PiattaformaRentriFacile.it', 20, pageHeight - 10);
+        doc.text('Pagina ' + i + ' di ' + totalPages, 190 - 30, pageHeight - 10);
+      }
+      
+      // Salva il PDF
+      const fileName = 'conversazione-rentria-' + currentDate.getFullYear() + '-' + 
+                      (currentDate.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                      currentDate.getDate().toString().padStart(2, '0') + '.pdf';
+      doc.save(fileName);
+      
+      // Feedback visivo
+      showPDFSuccess();
+      
+    } catch (error) {
+      console.error('Errore durante la generazione del PDF:', error);
+      alert('Errore durante la generazione del PDF. Riprova.');
+    }
+  }
+
+  // Variabile globale per memorizzare dati analisi corrente
+  let currentAnalysisData = null;
+  
+  // Funzione per formattare risultati analisi immagine
+  function formatAnalysisResults(data) {
+    // Salva i dati per uso futuro
+    currentAnalysisData = data;
+    const items = data.items || [];
+    const totalsByMaterial = data.totals_by_material || [];
+    const grandTotalMassG = data.grand_total_mass_g || 0;
+    const notes = data.notes || '';
+    
+    // Calcola totale oggetti
+    const totalObjects = totalsByMaterial.reduce((sum, mat) => sum + (mat.count || 0), 0);
+    
+    if (totalObjects === 0) {
+      return `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+          <h3 style="color: #0C2267; margin-bottom: 10px;">🔍 Analisi Completata</h3>
+          <p>Nessun rifiuto rilevato nell'immagine.</p>
+        </div>
+      `;
+    }
+    
+    const totalKg = (grandTotalMassG / 1000).toFixed(2);
+    
+    let html = `
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+        <h3 style="color: #0C2267; margin-bottom: 15px;">♻️ Analisi completata</h3>
+        
+        <div style="background: white; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+          <strong>Rilevati ${totalObjects} oggetti</strong> (peso stimato: ${totalKg} kg)
+        </div>
+    `;
+    
+    // Mostra riepilogo per materiale
+    if (totalsByMaterial.length > 0) {
+      html += `<div style="margin-bottom: 15px;">`;
+      
+      const materialIcons = {
+        'plastica': '♻️', 'vetro': '🍾', 'carta': '📄', 'cartone': '📦',
+        'metallo': '🥫', 'organico': '🍃', 'legno': '🪵', 'tessile': '👕',
+        'e-waste': '💻', 'composito': '🔄', 'altro': '❓'
+      };
+      
+      totalsByMaterial.forEach(mat => {
+        const icon = materialIcons[mat.material] || '📦';
+        const massKg = ((mat.mass_g || 0) / 1000).toFixed(3);
+        html += `
+          <div style="display: inline-block; background: white; padding: 8px 12px; border-radius: 6px; margin: 4px;">
+            ${icon} <strong>${mat.material}</strong>: ${mat.count} oggetti (~${massKg} kg)
+          </div>
+        `;
+      });
+      
+      html += `</div>`;
+    }
+    
+    // Mostra dettagli principali oggetti (primi 5)
+    if (items.length > 0) {
+      html += `
+        <details style="background: white; padding: 10px; border-radius: 6px;">
+          <summary style="cursor: pointer; color: #0C2267; font-weight: bold;">
+            📋 Dettagli oggetti rilevati
+          </summary>
+          <div style="margin-top: 10px;">
+      `;
+      
+      items.slice(0, 5).forEach((item, i) => {
+        html += `
+          <div style="padding: 8px 0; ${i > 0 ? 'border-top: 1px solid #e0e0e0;' : ''}">
+            • ${item.quantity}x ${item.product_type} (${item.material})
+            - ${item.unit_weight_g}g/unità
+          </div>
+        `;
+      });
+      
+      if (items.length > 5) {
+        html += `<div style="padding: 8px 0; color: #666;">...e altri ${items.length - 5} oggetti</div>`;
+      }
+      
+      html += `</div></details>`;
+    }
+    
+    if (notes) {
+      html += `
+        <div style="margin-top: 10px; padding: 8px; background: #fff3cd; border-radius: 6px; font-size: 11px;">
+          <strong>📝 Note:</strong> ${notes}
+        </div>
+      `;
+    }
+    
+    html += `</div>`;
+    
+    return html;
+  }
+  
+  // Funzione per classificazione RENTRI (globale per services.js)
+  window.requestRentriClassification = async function() {
+    if (!currentAnalysisData) {
+      alert('❌ Nessun dato di analisi disponibile');
+      return;
+    }
+    
+    if (isProcessing) {
+      alert('⚠️ Attendi il completamento della risposta corrente');
+      return;
+    }
+    
+    // Wait for scripts to be ready
+    console.log('RENTRI: Checking if scripts are ready...');
+    const scriptsReady = await waitForScripts();
+    if (!scriptsReady) {
+      alert('Sistema ancora in caricamento. Riprova tra qualche secondo.');
+      return;
+    }
+    
+    // Ottieni User ID
+    let userId = null;
+    if (window.userFingerprint) {
+      try {
+        userId = await window.userFingerprint.getUserId();
+      } catch (error) {
+        console.error('Errore generazione User ID per RENTRI:', error);
+        alert('Errore nell\'identificazione utente. Riprova.');
+        return;
+      }
+    } else {
+      console.error('Sistema fingerprinting non disponibile per RENTRI');
+      alert('Sistema identificazione non caricato. Ricarica la pagina.');
+      return;
+    }
+    
+    // Mostra messaggio utente
+    const userDiv = appendMessageContainer('user');
+    userDiv.textContent = 'Per la compilazione RENTRI, classifica questi rifiuti rilevati tramite analisi AI con codici CER e indicazioni per lo smaltimento';
+    
+    // Mostra loader bot
+    const botDiv = appendMessageContainer('bot');
+    botDiv.innerHTML = '⏳ Cerco codici CER e indicazioni RENTRI...';
+    
+    // Inizia elaborazione
+    setProcessingState(true);
+    
+    try {
+      // Costruisci richiesta batch per RENTRI
+      const batchRequest = buildRentriBatchRequest(currentAnalysisData);
+      console.log('Richiesta RENTRI batch:', batchRequest);
+      
+      // Chiamata al chatbot per classificazione RENTRI
+      const requestBody = {
+        content: batchRequest,
+        user_id: userId
+      };
+      console.log('Request body per chat.php:', requestBody);
+      
+      // Crea AbortController per permettere interruzione
+      currentAbortController = new AbortController();
+      
+      const response = await fetch('chat.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId
+        },
+        body: JSON.stringify(requestBody),
+        signal: currentAbortController.signal
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Rate limiting - mostra messaggio specifico
+          const errorResponse = await response.text();
+          try {
+            const errorData = JSON.parse(errorResponse.replace('data: ', ''));
+            const message = errorData.message || 'Hai raggiunto il limite di 5 messaggi';
+            botDiv.innerHTML = `
+              <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
+                <p style="margin: 0;">${message}</p>
+                <p style="margin: 10px 0 0 0;"><a href="https://www.rentri360.it" target="_blank" rel="noopener noreferrer" style="color: #1565c0; font-weight: bold;">Accedi a Rentri360.it →</a></p>
+              </div>
+            `;
+          } catch (e) {
+            botDiv.innerHTML = `
+              <div style="background: #e3f2fd; color: #1565c0; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <h4 style="margin: 0 0 10px 0;">❗ Limite messaggi raggiunto</h4>
+                <p style="margin: 0;">La prova è scaduta, accedi a Rentri360.it e semplifica le tue procedure.</p>
+                <p style="margin: 10px 0 0 0;"><a href="https://www.rentri360.it" target="_blank" rel="noopener noreferrer" style="color: #1565c0; font-weight: bold;">Accedi a Rentri360.it →</a></p>
+              </div>
+            `;
+          }
+          setProcessingState(false);
+          currentAbortController = null;
+          return;
+        }
+        const errorText = await response.text();
+        console.log('Response error text:', errorText);
+        throw new Error(`Errore API: ${response.status} - ${errorText}`);
+      }
+      
+      let result = '';
+      const reader = response.body.getReader();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = new TextDecoder().decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data !== '[DONE]' && data.trim()) {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                  result += parsed.choices[0].delta.content;
+                }
+              } catch (e) {
+                // Ignora errori di parsing
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('Risultato RENTRI finale:', result);
+      
+      // Mostra risultati RENTRI nel botDiv
+      botDiv.innerHTML = renderMarkdown(result);
+      
+    } catch (error) {
+      console.error('Errore classificazione RENTRI:', error);
+      if (error.name === 'AbortError') {
+        botDiv.innerHTML = '<em style="color: #666;">Classificazione RENTRI interrotta dall\'utente</em>';
+      } else {
+        botDiv.innerHTML = '❌ Errore durante la classificazione RENTRI: ' + error.message;
+      }
+    } finally {
+      // Fine elaborazione
+      setProcessingState(false);
+      currentAbortController = null;
+    }
+  };
+  
+  function buildRentriBatchRequest(data) {
+    const items = data.items || [];
+    if (items.length === 0) {
+      return "Non ci sono oggetti da classificare per RENTRI.";
+    }
+    
+    let request = "Per la compilazione RENTRI, classifica questi rifiuti rilevati tramite analisi AI con codici CER e indicazioni per lo smaltimento:\n\n";
+    
+    items.forEach(item => {
+      const sizeText = item.size_class || 'media';
+      const weightText = item.estimated_weight_g ? `${item.estimated_weight_g}g` : 'peso non stimato';
+      request += `- ${item.quantity}x ${item.product_type} (${item.material}, ${sizeText}) - ${weightText}\n`;
+    });
+    
+    request += "\nFornisci per ciascuno: codice CER, descrizione e note per lo smaltimento.";
+    
+    return request;
+  }
+  
+  
+  // Funzione per mostrare feedback di successo
+  function showPDFSuccess() {
+    const pdfBtn = document.getElementById('pdf-btn');
+    if (!pdfBtn) return;
+    
+    const originalHTML = pdfBtn.innerHTML;
+    
+    pdfBtn.style.background = '#d4edda';
+    pdfBtn.style.color = '#155724';
+    pdfBtn.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; gap: 2px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg><span style="font-size: 10px; font-weight: 500;">OK!</span></div>';
+    
+    setTimeout(() => {
+      pdfBtn.style.background = '';
+      pdfBtn.style.color = '';
+      pdfBtn.innerHTML = originalHTML;
+    }, 2000);
+  }
+
+  // Preload jsPDF quando la pagina si carica
+  window.addEventListener('load', function() {
+    console.log('Page loaded. Checking jsPDF...');
+    if (!isJsPDFAvailable()) {
+      console.log('Preloading jsPDF...');
+      loadJsPDF(function() {
+        console.log('jsPDF preloaded successfully');
+        const jsPDFObj = getJsPDFConstructor();
+        if (jsPDFObj) {
+          console.log('jsPDF constructor available:', typeof jsPDFObj);
+          console.log('Constructor is function:', typeof jsPDFObj === 'function');
+        }
+      });
+    } else {
+      console.log('jsPDF already available');
+      const jsPDFObj = getJsPDFConstructor();
+      console.log('jsPDF constructor type:', typeof jsPDFObj);
+      console.log('Constructor is function:', typeof jsPDFObj === 'function');
+    }
+  });
+
+  // Inizializza PDF e Note
+  document.addEventListener('DOMContentLoaded', function() {
+    const attachmentNotesBtn = document.getElementById('notes-btn');
+    const attachmentPdfBtn = document.getElementById('pdf-btn');
+    const attachmentAnalyzeBtn = document.getElementById('analyze-btn');
+    const imageInput = document.getElementById('image-input');
+    
+    if (attachmentNotesBtn) {
+      attachmentNotesBtn.addEventListener('click', () => {
+        // Evidenzia selezione
+        attachmentNotesBtn.classList.add('selected');
+        setTimeout(() => attachmentNotesBtn.classList.remove('selected'), 200);
+        
+        if (attachmentMenu) {
+          attachmentMenu.classList.remove('active');
+        }
+        toggleNotesPanel();
+      });
+    }
+    
+    if (attachmentPdfBtn) {
+      attachmentPdfBtn.addEventListener('click', () => {
+        // Evidenzia selezione
+        attachmentPdfBtn.classList.add('selected');
+        
+        // Conferma esportazione PDF
+        if (confirm('Vuoi esportare la conversazione in PDF?')) {
+          if (attachmentMenu) {
+          attachmentMenu.classList.remove('active');
+        }
+          exportToPDF();
+        } else {
+          setTimeout(() => attachmentPdfBtn.classList.remove('selected'), 200);
+        }
+      });
+    }
+    
+    // Handler per Analizza Immagine
+    if (attachmentAnalyzeBtn) {
+      attachmentAnalyzeBtn.addEventListener('click', () => {
+        attachmentAnalyzeBtn.classList.add('selected');
+        setTimeout(() => attachmentAnalyzeBtn.classList.remove('selected'), 200);
+        
+        if (attachmentMenu) {
+          attachmentMenu.classList.remove('active');
+        }
+        
+        // Trigger file input
+        if (imageInput) {
+          imageInput.click();
+        }
+      });
+    }
+    
+    // Handler per upload immagine
+    if (imageInput) {
+      imageInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Valida tipo file
+        if (!file.type.startsWith('image/')) {
+          alert('Per favore seleziona un file immagine valido.');
+          return;
+        }
+        
+        // Valida dimensione (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert('Il file è troppo grande. Dimensione massima: 10MB');
+          return;
+        }
+        
+        // Comprimi immagine se troppo grande
+        let processedFile = file;
+        if (file.size > 1.5 * 1024 * 1024) { // Se > 1.5MB, comprimi
+          try {
+            processedFile = await compressImage(file, 1.5 * 1024 * 1024); // Max 1.5MB
+            console.log(`Immagine compressa: ${file.size} → ${processedFile.size} bytes`);
+          } catch (e) {
+            console.warn('Compressione fallita, uso immagine originale:', e);
+          }
+        }
+        
+        // Mostra messaggio utente con anteprima
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+          // Aggiungi messaggio utente con immagine
+          const userDiv = appendMessageContainer('user');
+          userDiv.innerHTML = `
+            <img src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 8px; display: block;">
+          `;
+          
+          // Mostra loader
+          const botDiv = appendMessageContainer('bot');
+          botDiv.innerHTML = '⏳ Sto analizzando l\'immagine...';
+          
+          // Inizia elaborazione
+          setProcessingState(true);
+          
+          // Invia per analisi
+          try {
+            // Debug info per capire il problema camera vs gallery
+            console.log('Analyzing file:', {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              lastModified: file.lastModified
+            });
+            
+            // Debug mobile - mostra info file
+            const originalMB = (file.size/1024/1024).toFixed(2);
+            const processedMB = (processedFile.size/1024/1024).toFixed(2);
+            const sizeInfo = processedFile !== file ? `${originalMB}MB→${processedMB}MB` : `${originalMB}MB`;
+            botDiv.innerHTML = `⏳ Analizzando: ${file.name} (${processedFile.type}, ${sizeInfo})`;
+            
+            const formData = new FormData();
+            formData.append('image', processedFile);
+            
+            const response = await fetch('analyze-original.php', {
+              method: 'POST',
+              body: formData
+            });
+            
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('Analysis data:', data);
+            
+            if (data.error) {
+              botDiv.innerHTML = `❌ Errore durante l'analisi: ${data.error}`;
+            } else {
+              // Formatta e mostra risultati
+              botDiv.innerHTML = formatAnalysisResults(data);
+              // Attiva pulsanti RENTRI dopo analisi completata
+              if (window.chatServices && data.items && data.items.length > 0) {
+                setTimeout(() => {
+                  window.chatServices.enableRentriButtons();
+                }, 500); // Piccolo delay per assicurarsi che i pulsanti siano stati creati
+              }
+            }
+          } catch (error) {
+            console.error('Analysis error:', error);
+            // Debug mobile - mostra errore dettagliato
+            botDiv.innerHTML = `❌ Errore: ${error.message}<br><small>Stack: ${error.stack}</small>`;
+          } finally {
+            // Fine elaborazione
+            setProcessingState(false);
+          }
+        };
+        
+        reader.readAsDataURL(file);
+        
+        // Reset input per permettere re-upload stesso file
+        imageInput.value = '';
+      });
+    }
+    
+    // Inizializza stato microfono
+    updateActionButton();
+  });
+  
+})();
+
+</script>
+
+</body>
+</html>
