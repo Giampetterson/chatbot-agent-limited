@@ -1,0 +1,34 @@
+# Sensitive configuration files
+.env
+*.env
+analyze.php
+
+# API keys and secrets
+config-secure.php
+*secret*
+*key*
+
+# Logs and temporary files
+logs/
+*.log
+*.pid
+*.tmp
+
+# Backups
+*.tar.gz
+*.zip
+backup_*
+
+# Private data
+private/
+user_limits.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo

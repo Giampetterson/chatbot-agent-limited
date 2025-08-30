@@ -1,0 +1,22 @@
+[2025-08-29 15:53:08] CRITICAL ALERT
+🚨 LIGHTBOT ALERT 🚨
+
+Category: api_errors
+Severity: high
+Error Count: 10 (threshold: 10)
+Time Window: 5 minute(s)
+Server: chatbot-ligh-wp-campaign
+Time: 2025-08-29 15:53:08
+
+Please investigate immediately.
+
+[2025-08-29 15:56:32] CRITICAL ALERT [test_alert]
+Severity: low
+Message: This is a test alert from Lightbot monitoring system
+Host: chatbot-ligh-wp-campaign
+Context: {
+    "test": true,
+    "timestamp": 1756482992
+}
+--------------------------------------------------------------------------------
+
