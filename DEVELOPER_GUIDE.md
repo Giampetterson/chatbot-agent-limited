@@ -75,16 +75,12 @@ nginx -version         # Richiesto: 1.20+
 git clone https://github.com/Giampetterson/chatbot-agent-limited.git
 cd chatbot-agent-limited
 
-# 2. Setup database
-mysql -u root -p << EOF
-CREATE DATABASE lightbot_dev;
-CREATE USER 'lightbot_dev'@'localhost' IDENTIFIED BY 'dev_password';
-GRANT ALL PRIVILEGES ON lightbot_dev.* TO 'lightbot_dev'@'localhost';
-FLUSH PRIVILEGES;
-EOF
+# 2. Setup database (automatico)
+cd database/scripts
+./init-database.sh development
 
-# 3. Crea .env per sviluppo
-cp .env.example .env.dev
+# 3. Copia configurazione generata
+cp database/.env.development .env
 ```
 
 ### 2.3 Configurazione .env.dev

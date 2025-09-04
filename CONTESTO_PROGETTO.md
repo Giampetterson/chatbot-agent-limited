@@ -24,8 +24,11 @@
 
 ### **Database & Rate Limiting**
 - **Database**: MySQL via `database.php` (DatabaseManager)
+- **Schema**: Completo in `database/schema/lightbot_schema.sql`
+- **Setup**: Script automatico `database/scripts/init-database.sh`
 - **Rate Limiting**: `rate-limiter-db.php` - ATTUALMENTE DISATTIVATO (999999 msg)
 - **User ID**: Fingerprinting via `user-fingerprint.js` + validazione `user-validator.php`
+- **Backup**: Scripts automatici in `database/scripts/`
 
 ---
 

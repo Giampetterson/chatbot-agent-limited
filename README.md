@@ -69,12 +69,25 @@ cd chatbot-agent-limited
 ```
 
 ### 2. Configurazione Database
+
+**🚀 Setup Automatico (Raccomandato)**
+```bash
+cd database/scripts
+./init-database.sh production
+```
+
+**📋 Setup Manuale**
 ```sql
-CREATE DATABASE lightbot;
+CREATE DATABASE lightbot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'lightbot_user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON lightbot.* TO 'lightbot_user'@'localhost';
 FLUSH PRIVILEGES;
+
+-- Applica schema completo
+mysql -u root -p lightbot < database/schema/lightbot_schema.sql
 ```
+
+**📚 Documentazione Completa**: [Database Setup Guide](database/docs/DATABASE_SETUP.md)
 
 ### 3. File Environment
 Crea `.env` nella root del progetto:
@@ -247,9 +260,10 @@ public_html/
 ### Raccomandazioni
 - Aggiorna regolarmente PHP e dipendenze
 - Monitora logs per attività sospette  
-- Backup regolari database e `.env`
+- **Backup automatici database**: `database/scripts/backup-database.sh`
 - Usa HTTPS con certificati validi
 - Implementa fail2ban per protezione IP
+- **Disaster Recovery**: [Database Setup Guide](database/docs/DATABASE_SETUP.md#backup--recovery)
 
 ---
 
