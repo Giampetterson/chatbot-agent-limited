@@ -1,3 +1,7 @@
+<?php
+// Include security headers for Safari iOS microphone access
+require_once 'security-headers.php';
+?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -104,7 +108,7 @@
       font-size: 12px;
       font-weight: 500;
       font-family: 'Space Grotesk', sans-serif;
-      display: flex;
+      display: none; /* Nasconde il counter dei messaggi */
       align-items: center;
       gap: 6px;
       transition: all 0.3s ease;
@@ -2115,12 +2119,21 @@ function compressImage(file, maxSizeBytes, quality = 0.8) {
         console.log('User ID generato:', userId);
       } catch (error) {
         console.error('Errore generazione User ID:', error);
-        alert('Errore nell\'identificazione utente. Riprova.');
-        return;
+        // Genera un ID di emergenza invece di bloccare
+        userId = 'fp_emergency_' + Math.random().toString(36).substring(2) + '_' + Date.now().toString(36);
+        console.warn('Usando ID di emergenza:', userId);
       }
     } else {
       console.error('Sistema fingerprinting non disponibile');
-      alert('Sistema identificazione non caricato. Ricarica la pagina.');
+      // Genera un ID di emergenza invece di bloccare
+      userId = 'fp_emergency_' + Math.random().toString(36).substring(2) + '_' + Date.now().toString(36);
+      console.warn('Usando ID di emergenza senza fingerprinting:', userId);
+    }
+    
+    // Verifica finale che abbiamo un userId
+    if (!userId) {
+      console.error('Impossibile generare User ID');
+      alert('Errore nell\'identificazione utente. Riprova.');
       return;
     }
     

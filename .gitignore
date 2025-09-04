@@ -13,11 +13,14 @@ logs/
 *.log
 *.pid
 *.tmp
+*.jsonl
 
 # Backups
 *.tar.gz
 *.zip
+*.bak
 backup_*
+*backup*
 
 # Private data
 private/

@@ -1,0 +1,379 @@
+/**
+ * RentrIA Chat Widget - Stili CSS
+ * Version: 1.0.0
+ */
+
+.rentria-chat-widget-container {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12pt;
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 20px auto;
+}
+
+.rentria-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 5px;
+}
+
+.rentria-chat-title {
+    font-size: 24pt;
+    font-weight: 600;
+    color: #0C2267;
+    margin: 0;
+}
+
+.rentria-pdf-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    border: 2px solid #0C2267;
+    border-radius: 8px;
+    color: #0C2267;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.rentria-pdf-btn:hover {
+    background: #0C2267;
+    color: #fff;
+}
+
+.rentria-pdf-btn.success {
+    background: #1F7138;
+    border-color: #1F7138;
+    color: #fff;
+}
+
+.rentria-chat-container {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin: 0 auto;
+}
+
+.rentria-message-list {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    background: #fafafa;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rentria-msg {
+    padding: 10px 14px;
+    border-radius: 18px;
+    max-width: 80%;
+    font-size: 12pt;
+    font-family: 'Oxanium', sans-serif;
+    font-weight: 400;
+    line-height: 1.4;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rentria-msg.rentria-user {
+    background: #0C2267;
+    color: #fff;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.rentria-msg.rentria-bot {
+    background: #e8e8e8;
+    color: #333;
+    align-self: flex-start;
+}
+
+.rentria-msg.rentria-bot .rentria-msg-content {
+    position: relative;
+}
+
+/* Action buttons container */
+.rentria-action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.rentria-msg:hover .rentria-action-buttons {
+    opacity: 1;
+}
+
+/* Touch devices - always show buttons */
+@media (hover: none) {
+    .rentria-action-buttons {
+        opacity: 1;
+    }
+}
+
+.rentria-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.rentria-action-btn:hover {
+    background: #f0f0f0;
+    border-color: #0C2267;
+    color: #0C2267;
+}
+
+.rentria-action-btn.success {
+    background: #1F7138;
+    color: #fff;
+    border-color: #1F7138;
+}
+
+.rentria-action-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Markdown styles dentro i messaggi */
+.rentria-msg.rentria-bot a {
+    color: #0C2267;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.rentria-msg.rentria-bot a:hover {
+    color: #1F7138;
+}
+
+.rentria-msg.rentria-bot h1,
+.rentria-msg.rentria-bot h2,
+.rentria-msg.rentria-bot h3,
+.rentria-msg.rentria-bot h4,
+.rentria-msg.rentria-bot h5,
+.rentria-msg.rentria-bot h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    margin-top: 0.5em;
+    margin-bottom: 0.3em;
+}
+
+.rentria-msg.rentria-bot h1 { font-size: 1.5em; }
+.rentria-msg.rentria-bot h2 { font-size: 1.3em; }
+.rentria-msg.rentria-bot h3 { font-size: 1.1em; }
+
+.rentria-msg.rentria-bot p {
+    margin: 0;
+    line-height: 1.25;
+}
+
+.rentria-msg.rentria-bot p + p {
+    margin-top: 0.25rem;
+}
+
+.rentria-msg.rentria-bot ul,
+.rentria-msg.rentria-bot ol {
+    margin-left: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.rentria-msg.rentria-bot li {
+    margin-bottom: 0.2em;
+}
+
+.rentria-msg.rentria-bot code {
+    background: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.rentria-msg.rentria-bot pre {
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin-bottom: 0.5em;
+}
+
+.rentria-msg.rentria-bot pre code {
+    background: none;
+    padding: 0;
+}
+
+.rentria-msg.rentria-bot blockquote {
+    border-left: 3px solid #0C2267;
+    padding-left: 10px;
+    margin-left: 0;
+    color: #666;
+    font-style: italic;
+}
+
+.rentria-msg.rentria-bot table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 0.5em;
+}
+
+.rentria-msg.rentria-bot table th,
+.rentria-msg.rentria-bot table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.rentria-msg.rentria-bot table th {
+    background: #f0f0f0;
+    font-weight: 600;
+}
+
+/* Input area */
+.rentria-input-area {
+    display: flex;
+    padding: 12px;
+    gap: 8px;
+    border-top: 1px solid #eee;
+    background: #fff;
+    border-radius: 0 0 12px 12px;
+}
+
+.rentria-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Oxanium', sans-serif;
+    transition: border-color 0.3s ease;
+}
+
+.rentria-input:focus {
+    outline: none;
+    border-color: #0C2267;
+}
+
+.rentria-send-btn {
+    padding: 10px 16px;
+    background: #1F7138;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.rentria-send-btn:hover {
+    background: #185529;
+    transform: scale(1.05);
+}
+
+.rentria-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.rentria-send-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Loading animation */
+.rentria-typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+}
+
+.rentria-typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #666;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.rentria-typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.rentria-typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .rentria-chat-widget-container {
+        margin: 10px;
+    }
+    
+    .rentria-chat-title {
+        font-size: 20pt;
+    }
+    
+    .rentria-msg {
+        max-width: 90%;
+    }
+    
+    .rentria-action-buttons {
+        flex-wrap: wrap;
+    }
+}
+
+/* Scrollbar personalizzata */
+.rentria-message-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.rentria-message-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.rentria-message-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.rentria-message-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

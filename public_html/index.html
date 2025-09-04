@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentrIA - Assistente Virtuale per la Gestione Rifiuti</title>
+    <meta http-equiv="refresh" content="0;url=chatbot.php">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: #fafafa;
+        }
+        .redirect-message {
+            color: #0C2267;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            color: #1F7138;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-message">
+        <h1>🤖 RentrIA - Assistente Gestione Rifiuti</h1>
+        <p class="loading">Caricamento in corso...</p>
+        <p>Se non vieni reindirizzato automaticamente, <a href="chatbot.php">clicca qui</a></p>
+    </div>
+    <script>
+        // Fallback redirect per browser che non supportano meta refresh
+        setTimeout(function() {
+            window.location.href = 'chatbot.php';
+        }, 1000);
+    </script>
+</body>
+</html>

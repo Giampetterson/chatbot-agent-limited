@@ -70,7 +70,7 @@ try {
         'che ia sei',
         'intelligence artificiale',
         'consulente professionista',
-        'rentri',
+        // 'rentri', -- RIMOSSO: bloccava domande legittime su RENTRI
         'instructions',
         'istruzioni di sistema',
         'ignore previous',
@@ -98,13 +98,20 @@ try {
     // Prova header HTTP first
     if (isset($_SERVER['HTTP_X_USER_ID'])) {
         $userId = $_SERVER['HTTP_X_USER_ID'];
+        error_log("Chat API: User ID from header: " . substr($userId, 0, 30) . "...");
     }
     // Fallback a JSON body
     elseif (isset($input['user_id'])) {
         $userId = $input['user_id'];
+        error_log("Chat API: User ID from body: " . substr($userId, 0, 30) . "...");
     }
     
     if (empty($userId)) {
+        // Log dettagliato per debug
+        error_log("Chat API: No user ID found. Headers: " . json_encode(array_filter($_SERVER, function($key) {
+            return strpos($key, 'HTTP_') === 0;
+        }, ARRAY_FILTER_USE_KEY)));
+        error_log("Chat API: Input body: " . json_encode($input));
         throw new Exception('User ID richiesto ma non fornito');
     }
     

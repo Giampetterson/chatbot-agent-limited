@@ -1,0 +1,66 @@
+# Safari iOS Security Headers for Microphone Access  
+# Created: 2025-09-03 for Milestone 1
+# Updated: Fix HTTP 413 upload limits
+
+# PHP Upload Configuration
+php_value upload_max_filesize 10M
+php_value post_max_size 15M
+php_value max_execution_time 120
+php_value max_input_time 120
+
+<IfModule mod_headers.c>
+    # Permissions Policy - CRITICO per Safari iOS microfono
+    Header always set Permissions-Policy "microphone=(self), camera=(self), geolocation=(self), notifications=(self)"
+    
+    # Content Security Policy - Media sources
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; media-src 'self' blob: data:; connect-src 'self' https://s5pdsmwvr6vyuj6gwtaedp7g.agents.do-ai.run https://api.openai.com; img-src 'self' data: https:;"
+    
+    # Referrer Policy for security
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # X-Content-Type-Options
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # X-Frame-Options
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Force HTTPS redirect
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Protect sensitive files
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".env.example">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.log">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Cache headers for static resources
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 month"
+</IfModule>

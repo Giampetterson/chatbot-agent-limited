@@ -1,0 +1,29 @@
+# Protezione directory bot Telegram
+Options -Indexes
+
+# Blocca accesso ai file di configurazione
+<Files "config.php">
+    Require all denied
+</Files>
+
+<Files "bot-functions.php">
+    Require all denied
+</Files>
+
+# Permetti solo webhook.php e setup.php
+<FilesMatch "^(webhook|setup)\.php$">
+    Require all granted
+</FilesMatch>
+
+# Blocca tutti gli altri file PHP
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+
+# Headers di sicurezza
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+
+# Nasconde versione PHP
+ServerTokens Prod

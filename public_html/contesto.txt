@@ -1,0 +1,10 @@
+Contesto per trascrizione vocale RentrIA:
+
+Assistente virtuale specializzato nella gestione dei rifiuti e procedure amministrative.
+Terminologia tecnica: rifiuti, rifiuti urbani, raccolta differenziata, riciclo, smaltimento, comune, amministrazione.
+Parole chiave: gestione rifiuti, ufficio tecnico, servizi ambientali, raccolta, conferimento, centri di raccolta.
+
+Domande comuni: "Come smaltisco...", "Dove conferisco...", "Quando passa la raccolta...", "Che tipo di rifiuto è...".
+
+Linguaggio: italiano informale, dialetti locali possibili.
+Ambito: servizi comunali, procedure burocratiche, informazioni ambientali.
